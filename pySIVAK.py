@@ -2,6 +2,8 @@
 
 Class for reading and postprocessing SIVAK output
 
+Jurjen de Jong, Deltares, 3-12-2020
+
 """
 
 from pathlib import Path
@@ -106,9 +108,9 @@ class pySIVAK:
         
         l = self.levelings.copy()
         
-        # Split in bins, add a -0.1 to also have an 'Empty' bin
+        # Split in bins, add a -0.1 to also have an 'Empty' bin, the other 0% to 1%
         bins = [-0.1] + list(np.linspace(0, 100, n_bins))
-        labels = ['0%'] + [f'{s}% - {e}%' for s, e in zip(bins[1:-1], bins[2:])]
+        labels = ['0%'] + [f'{s:.0f}% - {e:.0f}%' for s, e in zip([1.] + bins[2:-1], bins[2:])]
         
         # Discretise into bins
         l['Utilization open side (%)'] = pd.cut(bins=bins, x=l['Utilization open side (%)'], labels=labels)
