@@ -9,68 +9,161 @@ Jurjen de Jong, Deltares, 3-12-2020
 from pathlib import Path
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-from matplotlib.colors import LogNorm
+import itertools
+
 
 class pySIVAK:
-    
-    
-    def __init__(self, ships_file: Path, levelings_file: Path, transit_times_file: Path, summary_file: Path=None):
-        
+
+    def __init__(self, ships_file: Path, levelings_file: Path, transit_times_file: Path, summary_file: Path = None,
+                 replications=None):
+
         self.name = ships_file.stem.split('(')[1].split(')')[0]
-        
+
         # Read all data
         self.ships = pd.read_excel(ships_file).set_index(['Replication Id', 'Ship'])
         self.levelings = pd.read_excel(levelings_file).set_index(['Replication Id', 'Lock Leveling ID'])
         self.transit_times = pd.read_excel(transit_times_file).set_index(['Replication Id', 'Ship'])
-        
+
+        # Only select specific replications
+        if replications is not None:
+            self.ships.reindex(replications, axis=0, level=0)
+
         if summary_file is not None:
             self.summary = pd.read_excel(summary_file, index_col='Chamber')
         else:
             self.summary = self.summary_compute()
-        
+
         self.replications = self.ships.index.levels[0].max()
 
         # Formatting
         self.transit_times['Time'] = pd.to_datetime(self.transit_times['Time'], format='%d-%m-%Y %H:%M:%S')
 
-        for c in ['Start Doors Closing', 'Start Leveling', 'Start Doors Opening', 'Start Sailing Out', 'End Sailing Out']:
+        for c in ['Start Doors Closing', 'Start Leveling', 'Start Doors Opening', 'Start Sailing Out',
+                  'End Sailing Out']:
             self.levelings[c] = pd.to_datetime(self.levelings[c], format='%d-%m-%Y %H:%M:%S')
-        
+
         # Joins
         self.transit_times = self.transit_times.join(self.ships, rsuffix='_shiplog')
-        
-        
-        
-    def summary_compute():
-        # Wrong way to reproduce, mean of all passage times of all replicas
-        passage_time = S[scenario].transit_times.groupby('Chamber')['Passage time (hours)'].mean() * 60
-        # Good way to reproduce (first per replica, than mean of replicas)
-        # passage_time = (S[scenario].transit_times.reset_index().groupby(['Replication Id', 'Chamber'])['Passage time (hours)'].mean() * 60 ).unstack().mean()
 
-        # Cannot reproduce, is SIVAK correct?
+    def correction_leveling_without_utilization(self):
+        """ Remove levelings without utilization """
+        l = self.levelings
+        ii = (l['Utilization open side (%)'] > 0) | (l['Utilization closed side (%)'] > 0)
+        self.levelings = l.loc[ii]
+
+    def correction_waitingtimes_without_new_arrivals(self, maximum_waiting_time):
+        """
+        This functions correct the SIVAK output to correct for ships that are now
+        waiting for the maximum_waiting_time to pass, while there is not a single
+        ship going to arrive within that time slot.
+
+        maximum_waiting_time: hours
+        """
+
+        d = self.transit_times
+
+        n_correct = []
+        for r, direction in itertools.product(d.index.levels[0], d['Direction'].unique()):
+            # Analyse per direction
+            d_dir = d.reindex([r], axis=0, level=0).loc[d['Direction'] == direction]
+            time_until_next_vessel = d_dir['Time'].diff(periods=1).shift(-1).dt.total_seconds() / 60 / 60
+
+            # Get all vessels that have a current waiting time longer than max and
+            # where it also take longer than max for a next vessel to arrive
+            ii_correct = (d_dir['Waiting time (hours)'] >= maximum_waiting_time) & (
+                    time_until_next_vessel >= maximum_waiting_time)
+            n_correct.extend(ii_correct.index[ii_correct])
+
+        # Set waiting time to 0 hours
+        d.loc[n_correct, 'Waiting time (hours)'] = 0
+
+        # Also recompute derived statistics
+        d['Total waiting time (hours)'] = d['Waiting time (hours)'] + d['Demurrage time (hours)']
+        d['Passage time (hours)'] = d['Total waiting time (hours)'] + d['Leveling time (hours)']
+
+        self.transit_times = d
+
+    def correction_waterloss(self, water_plane: dict = None, dH: float = None, downward_leveling_side: int = 2,
+                             correct_ship_volume: bool = True):
+        """
+        This function recomputes the waterloss, based on the water plane dimensions and the volume of the ships
+
+        :param water_plane: dict of water_plane (m2) per chamber. leave empty to use the current values.
+        :param dH: float of head loss (m). Only used when water_plane is specified
+        :param downward_leveling_side: which leveling side is downward (and the other is upward)
+        :type correct_ship_volume: optional to disable correction for the ship volume
+        """
+
+        l = self.levelings
+        t = self.transit_times
+
+        if correct_ship_volume:
+            # LOA is too long. Better would be LPP
+            Cd = 0.9  # Assume shape coefficient
+            t['Volume (m3)'] = t['Width (m)'] * t['LOA (m)'] * t['Depth Actual (m)'] * Cd
+
+        for i, r in l.iterrows():
+            if water_plane is not None:
+                # Compute water loss based on waterplane
+                waterloss_row = dH * water_plane[r['Lock Chamber']]
+                if r['Side'] != downward_leveling_side:
+                    waterloss_row = 0
+            else:
+                waterloss_row = r['Waterloss (m3)']
+
+            if correct_ship_volume:
+                # Compute volume of ships going with the leveling
+
+                ii = t.loc[i[0], 'Lock Leveling ID'] == i[1]
+                ships = t.loc[i[0]][ii]
+                ship_volume = ships['Volume (m3)']
+                total_ship_volume = ship_volume.sum()
+
+                if r['Side'] == downward_leveling_side:
+                    total_ship_volume = -1 * total_ship_volume
+
+                l.loc[i, 'Total Ship Volume (m3)'] = total_ship_volume
+
+                waterloss_row = waterloss_row + total_ship_volume
+
+            l.loc[i, 'Waterloss (m3)'] = waterloss_row
+
+    def summary_compute(self):
+        """
+        Function to reproduce the summary results pf SIVAK.
+        Also some corrections are done, where the SIVAK defaults did not seem logical
+        """
+        # Wrong way to reproduce, mean of all passage times of all replicas
+        passage_time = self.transit_times.groupby('Chamber')['Passage time (hours)'].mean() * 60
+        # Good way to reproduce (first per replica, than mean of replicas)
+        # passage_time = (S[scenario].transit_times.reset_index().groupby(
+        #   ['Replication Id', 'Chamber'])['Passage time (hours)'].mean() * 60 ).unstack().mean()
 
         # Average waiting time of all trips
-        waiting_time = S[scenario].transit_times.groupby('Chamber')['Waiting time (hours)'].mean() * 60
+        waiting_time = self.transit_times.groupby('Chamber')['Waiting time (hours)'].mean() * 60
         # Average waiting time per replica, than averaged
-        # waiting_time = (S[scenario].transit_times.reset_index().groupby(['Replication Id', 'Chamber'])['Waiting time (hours)'].mean() * 60).unstack().mean()
+        # waiting_time = (S[scenario].transit_times.reset_index().groupby(
+        #   ['Replication Id', 'Chamber'])['Waiting time (hours)'].mean() * 60).unstack().mean()
 
         # Average utilization of all levelings
-        utilization = S[scenario].levelings.reset_index().groupby(['Lock Chamber'])['Utilization open side (%)'].mean()
+        utilization = self.levelings.reset_index().groupby(['Lock Chamber'])['Utilization open side (%)'].mean()
         # Average utilization per replica, than averaged
-        # utilization = S[scenario].levelings.reset_index().groupby(['Lock Chamber', 'Replication Id'])['Utilization open side (%)'].mean().unstack().mean(axis=1)
+        # utilization = S[scenario].levelings.reset_index().groupby(
+        #   ['Lock Chamber', 'Replication Id'])['Utilization open side (%)'].mean().unstack().mean(axis=1)
 
         # Number of levelings, per replica, than averaged (method does not matter)
-        n_levelings = S[scenario].levelings.reset_index().groupby(['Lock Chamber', 'Replication Id'])['Lock'].count().unstack().mean(axis=1)
+        n_levelings = self.levelings.reset_index().groupby(['Lock Chamber', 'Replication Id'])[
+            'Lock'].count().unstack().mean(axis=1)
 
         # Number of empty levelings, per replica, than averaged (method does not matter)
-        n_levelings_empty = S[scenario].levelings[S[scenario].levelings['Nb of Ships'] == 0].reset_index().groupby(['Lock Chamber', 'Replication Id'])['Lock'].count().unstack().mean(axis=1)
+        n_levelings_empty = self.levelings[self.levelings['Nb of Ships'] == 0].reset_index().groupby(
+            ['Lock Chamber', 'Replication Id'])['Lock'].count().unstack().mean(axis=1)
 
         # Number of ships, per replica, than averaged (method does not matter)
-        n_ships = S[scenario].levelings.reset_index().groupby(['Lock Chamber', 'Replication Id'])['Nb of Ships'].sum().unstack().mean(axis=1)
+        n_ships = self.levelings.reset_index().groupby(['Lock Chamber', 'Replication Id'])[
+            'Nb of Ships'].sum().unstack().mean(axis=1)
 
-        lock_name = S[scenario].levelings.groupby('Lock Chamber')['Lock'].first()
+        lock_name = self.levelings.groupby('Lock Chamber')['Lock'].first()
 
         self.summary = pd.concat({
             'Lock': lock_name,
@@ -81,61 +174,82 @@ class pySIVAK:
             'Avg waiting time (minutes)': waiting_time,
             'Avg Utilization (%)': utilization
         }, axis=1)
-    
-    
+
     def waterloss_per_hour_per_day(self):
-        s = self.levelings.groupby([self.levelings['Start Leveling'].dt.hour, self.levelings['Start Leveling'].dt.day])['Waterloss (m3)'].sum()
+        """
+        Total water loss per hour based
+
+        :type remove_zero_utility: Correct the model results for the zero_utility_results
+        :return:
+        """
+
+        l = self.levelings
+        s = l.groupby([l['Start Leveling'].dt.hour, l['Start Leveling'].dt.day])['Waterloss (m3)'].sum()
         s = s.unstack().fillna(0)  # Formatting
         s = s / self.replications  # Correct for replications
-        s = s / 60 / 60 # Per hour to per second
+        s = s / 60 / 60  # Per hour to per second
         return s
-    
-    def passage_time_per_hour_per_day(self, sum=False):
-        s = self.transit_times.groupby([self.transit_times['Time'].dt.hour, self.transit_times['Time'].dt.day])['Passage time (hours)'].mean()
+
+    def passage_time_per_hour_per_day(self):
+        """
+        """
+        s = self.transit_times.groupby([self.transit_times['Time'].dt.hour, self.transit_times['Time'].dt.day])[
+            'Passage time (hours)'].mean()
         s = s.unstack()  # Formatting
-        s = s* 60 # Hours to minutes
+        s = s * 60  # Hours to minutes
         return s
-    
-    def passage_time_per_hour_per_day_per_ship_sum(self):
-        s = self.transit_times.groupby([self.transit_times['Time'].dt.hour, self.transit_times['Time'].dt.day, self.transit_times['Class']])['Passage time (hours)'].sum()
+
+    def passage_time_per_hour_per_day_per_ship_sum(self, waiting_time=False):
+
+        if not waiting_time:
+            column = 'Passage time (hours)'
+        else:
+            column = 'Waiting time (hours)'
+
+        s = self.transit_times.groupby(
+            [self.transit_times['Time'].dt.hour, self.transit_times['Time'].dt.day, self.transit_times['Class']])[
+            column].sum()
         s = s.unstack()  # Formatting
         s = s / self.replications
-        s = s* 60 # Hours to minutes
+        s = s * 60  # Hours to minutes
         return s
-        
+
     def utilization(self, n_bins=5):
         # What part of the chamber is filled?
-        
+
         l = self.levelings.copy()
-        
+
         # Split in bins, add a -0.1 to also have an 'Empty' bin, the other 0% to 1%
         bins = [-0.1] + list(np.linspace(0, 100, n_bins))
         labels = ['0%'] + [f'{s:.0f}% - {e:.0f}%' for s, e in zip([1.] + bins[2:-1], bins[2:])]
-        
+
         # Discretise into bins
         l['Utilization open side (%)'] = pd.cut(bins=bins, x=l['Utilization open side (%)'], labels=labels)
         l['Utilization closed side (%)'] = pd.cut(bins=bins, x=l['Utilization closed side (%)'], labels=labels)
-        
+
         # Sum to matrix
-        utilization = l.groupby(['Utilization open side (%)', 'Utilization closed side (%)'])['Lock'].count().fillna(0).unstack()
+        utilization = l.groupby(['Utilization open side (%)', 'Utilization closed side (%)'])['Lock'].count().fillna(
+            0).unstack()
         utilization = utilization / self.replications
 
         return utilization
-    
+
     def ships_per_leveling(self):
         # Count number of commercial and recreational vessels per lock leveling
-        t = self.transit_times.reset_index().groupby(['Replication Id', 'Lock Leveling ID', 'Recreational'])['Ship'].count().unstack('Recreational').fillna(0)
-        t = t.rename(columns={True:'Recreational', False:'Commercial'})  # Set type of ship instead of simply True/False
+        t = self.transit_times.reset_index().groupby(['Replication Id', 'Lock Leveling ID', 'Recreational'])[
+            'Ship'].count().unstack('Recreational').fillna(0)
+        t = t.rename(
+            columns={True: 'Recreational', False: 'Commercial'})  # Set type of ship instead of simply True/False
 
         # Count all combinations of commercial and recreational
         t = t.reset_index().groupby(['Commercial', 'Recreational'])['Lock Leveling ID'].count().unstack().fillna(0)
 
         # Total ships per leveling
         ships_per_leveling = self.levelings['Nb of Ships'].value_counts().sort_index()
-        
+
         # Add no ships value to the matrix
-        t.loc[0, 0] = ships_per_leveling[0]  
-        
+        t.loc[0, 0] = ships_per_leveling[0]
+
         t = t / self.replications
-        
+
         return t
