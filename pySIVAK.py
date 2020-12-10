@@ -15,7 +15,15 @@ import itertools
 class pySIVAK:
 
     def __init__(self, ships_file: Path, levelings_file: Path, transit_times_file: Path, summary_file: Path = None,
-                 replications=None):
+                 replications: list = None):
+        """
+
+        :param ships_file:
+        :param levelings_file:
+        :param transit_times_file:
+        :param summary_file:
+        :param replications: list of replications
+        """
 
         self.name = ships_file.stem.split('(')[1].split(')')[0]
 
@@ -45,13 +53,13 @@ class pySIVAK:
         # Joins
         self.transit_times = self.transit_times.join(self.ships, rsuffix='_shiplog')
 
-    def correction_leveling_without_utilization(self):
+    def correction_leveling_without_utilization(self) -> None:
         """ Remove levelings without utilization """
         l = self.levelings
         ii = (l['Utilization open side (%)'] > 0) | (l['Utilization closed side (%)'] > 0)
         self.levelings = l.loc[ii]
 
-    def correction_waitingtimes_without_new_arrivals(self, maximum_waiting_time):
+    def correction_waitingtimes_without_new_arrivals(self, maximum_waiting_time) -> None:
         """
         This functions correct the SIVAK output to correct for ships that are now
         waiting for the maximum_waiting_time to pass, while there is not a single
@@ -84,7 +92,7 @@ class pySIVAK:
         self.transit_times = d
 
     def correction_waterloss(self, water_plane: dict = None, dH: float = None, downward_leveling_side: int = 2,
-                             correct_ship_volume: bool = True):
+                             correct_ship_volume: bool = True) -> None:
         """
         This function recomputes the waterloss, based on the water plane dimensions and the volume of the ships
 
@@ -128,7 +136,7 @@ class pySIVAK:
 
             l.loc[i, 'Waterloss (m3)'] = waterloss_row
 
-    def summary_compute(self):
+    def summary_compute(self) -> None:
         """
         Function to reproduce the summary results pf SIVAK.
         Also some corrections are done, where the SIVAK defaults did not seem logical
@@ -175,7 +183,7 @@ class pySIVAK:
             'Avg Utilization (%)': utilization
         }, axis=1)
 
-    def waterloss_per_hour_per_day(self):
+    def waterloss_per_hour_per_day(self) -> pd.DataFrame:
         """
         Total water loss per hour based
 
@@ -190,8 +198,9 @@ class pySIVAK:
         s = s / 60 / 60  # Per hour to per second
         return s
 
-    def passage_time_per_hour_per_day(self):
+    def passage_time_per_hour_per_day(self) -> pd.DataFrame:
         """
+        Compute 2D matrix of the average passage time (minutes) per per hour per day
         """
         s = self.transit_times.groupby([self.transit_times['Time'].dt.hour, self.transit_times['Time'].dt.day])[
             'Passage time (hours)'].mean()
@@ -199,7 +208,11 @@ class pySIVAK:
         s = s * 60  # Hours to minutes
         return s
 
-    def passage_time_per_hour_per_day_per_ship_sum(self, waiting_time=False):
+    def passage_time_per_hour_per_day_per_ship_sum(self, waiting_time: bool = False) -> pd.DataFrame:
+        """
+        Compute 3D matrix of the sum of all passage time (minutes) per per hour per day per ship
+        :type waiting_time: Set to True computes waiting_time instead of passage_time
+        """
 
         if not waiting_time:
             column = 'Passage time (hours)'
@@ -214,8 +227,15 @@ class pySIVAK:
         s = s * 60  # Hours to minutes
         return s
 
-    def utilization(self, n_bins=5):
-        # What part of the chamber is filled?
+    def utilization(self, n_bins=5) -> pd.DataFrame:
+        """
+        Compute 2D matrix with on the axis the utilization open/closed binned to n_bins. This function puts all
+        levelings in the corresponding bin of the matrix.
+
+        :type n_bins: Number of bins (5 --> [0, 1-25, 25-50, 50-75, 75-100] )
+
+        return: pandas Dataframe
+        """
 
         l = self.levelings.copy()
 
@@ -234,8 +254,10 @@ class pySIVAK:
 
         return utilization
 
-    def ships_per_leveling(self):
-        # Count number of commercial and recreational vessels per lock leveling
+    def ships_per_leveling(self) -> pd.DataFrame:
+        """
+        Count number of commercial and recreational vessels per lock leveling
+        """
         t = self.transit_times.reset_index().groupby(['Replication Id', 'Lock Leveling ID', 'Recreational'])[
             'Ship'].count().unstack('Recreational').fillna(0)
         t = t.rename(
