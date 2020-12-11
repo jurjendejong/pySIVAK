@@ -91,14 +91,20 @@ class pySIVAK:
 
         self.transit_times = d
 
-    def correction_waterloss(self, water_plane: dict = None, dH: float = None, downward_leveling_side: int = 2,
+    def correction_waterloss(self, water_plane: dict = None, dH: float = None, downward_leveling_side: int = 1,
                              correct_ship_volume: bool = True) -> None:
         """
-        This function recomputes the waterloss, based on the water plane dimensions and the volume of the ships
+        This function recomputes the waterloss, based on the water plane dimensions and the volume of the ships.
+
+        The water loss is defined as the volume lost at the upper level. So for each downward leveling we win
+        V_ship_downwards (upon sailing into chamber) and for each upward leveling we lose V_chamber (while leveling)
+        and V_ship_upwards (upon sailing out of the chamber).
+
+        This definition of waterloss results in the 'win' of water for downward leveling to have a negative sign.
 
         :param water_plane: dict of water_plane (m2) per chamber. leave empty to use the current values.
         :param dH: float of head loss (m). Only used when water_plane is specified
-        :param downward_leveling_side: which leveling side is downward (and the other is upward)
+        :param downward_leveling_side: which leveling side is downward (and the other is upward).
         :type correct_ship_volume: optional to disable correction for the ship volume
         """
 
@@ -111,16 +117,20 @@ class pySIVAK:
             t['Volume (m3)'] = t['Width (m)'] * t['LOA (m)'] * t['Depth Actual (m)'] * Cd
 
         for i, r in l.iterrows():
+
+            # Compute waterloss of leveling only if water_plan is giving
             if water_plane is not None:
-                # Compute water loss based on waterplane
-                waterloss_row = dH * water_plane[r['Lock Chamber']]
-                if r['Side'] != downward_leveling_side:
+
+                # Only for upward levelings
+                if r['Side'] == downward_leveling_side:
                     waterloss_row = 0
+                else:
+                    waterloss_row = dH * water_plane[r['Lock Chamber']]
             else:
                 waterloss_row = r['Waterloss (m3)']
 
+            # Compute volume of ships going with the leveling
             if correct_ship_volume:
-                # Compute volume of ships going with the leveling
 
                 ii = t.loc[i[0], 'Lock Leveling ID'] == i[1]
                 ships = t.loc[i[0]][ii]
