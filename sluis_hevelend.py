@@ -209,7 +209,7 @@ class SluisHevelend:
         tijd_start_normaal = np.max([tijd_start_normaal, 0])
 
         if tijd_stop_hevelen is None:
-            tijd_stop_hevelen = np.inf
+            tijd_stop_hevelen = self.tijd_hevelend
 
         # Functions
         Q_hevelend = lambda z, t_open: A_hevelen * np.sqrt(2*g * (H-z*(1/alpha+1))) * np.min([t_open/T_l_hevelen, 1])
