@@ -10,11 +10,15 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 import itertools
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 
 class pySIVAK:
 
-    def __init__(self, ships_file: Path, levelings_file: Path, transit_times_file: Path, summary_file: Path = None,
+    def __init__(self, levelings_file: Path, transit_times_file: Path, ships_file: Path = None,
+                 summary_file: Path = None,
                  replications: list = None):
         """
 
@@ -25,12 +29,17 @@ class pySIVAK:
         :param replications: list of replications
         """
 
-        self.name = ships_file.stem.split('(')[1].split(')')[0]
+        self.name = levelings_file.stem.split('(')[1].split(')')[0]
 
         # Read all data
-        self.ships = pd.read_excel(ships_file).set_index(['Replication Id', 'Ship'])
         self.levelings = pd.read_excel(levelings_file).set_index(['Replication Id', 'Lock Leveling ID'])
         self.transit_times = pd.read_excel(transit_times_file).set_index(['Replication Id', 'Ship'])
+
+        if ships_file is not None:
+            self.ships = pd.read_excel(ships_file).set_index(['Replication Id', 'Ship'])
+            self.transit_times = self.transit_times.join(self.ships, rsuffix='_shiplog')
+        else:
+            logging.info('Ships file not giving, some features might not work')
 
         # Only select specific replications
         if replications is not None:
@@ -39,9 +48,10 @@ class pySIVAK:
         if summary_file is not None:
             self.summary = pd.read_excel(summary_file, index_col='Chamber')
         else:
-            self.summary = self.summary_compute()
+            self.summary_compute()
 
-        self.replications = self.ships.index.levels[0].max()
+        # Get number of replications
+        self.replications = self.levelings.index.levels[0].max()
 
         # Formatting
         self.transit_times['Time'] = pd.to_datetime(self.transit_times['Time'], format='%d-%m-%Y %H:%M:%S')
@@ -49,9 +59,6 @@ class pySIVAK:
         for c in ['Start Doors Closing', 'Start Leveling', 'Start Doors Opening', 'Start Sailing Out',
                   'End Sailing Out']:
             self.levelings[c] = pd.to_datetime(self.levelings[c], format='%d-%m-%Y %H:%M:%S')
-
-        # Joins
-        self.transit_times = self.transit_times.join(self.ships, rsuffix='_shiplog')
 
     def correction_leveling_without_utilization(self) -> None:
         """ Remove levelings without utilization """
@@ -197,7 +204,6 @@ class pySIVAK:
         """
         Total water loss per hour based
 
-        :type remove_zero_utility: Correct the model results for the zero_utility_results
         :return:
         """
 
