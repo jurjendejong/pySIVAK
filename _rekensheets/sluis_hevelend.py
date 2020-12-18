@@ -1,3 +1,12 @@
+"""
+
+Module for computations for hevelend schutten
+
+Jurjen de Jong, Deltares, 18-12-2020
+
+"""
+
+
 import numpy as np
 
 
