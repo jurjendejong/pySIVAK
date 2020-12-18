@@ -1,0 +1,38 @@
+{
+   "water_plane":{
+      "Born":{
+         "Westkolk (oud)":2176,
+         "Middenkolk":3872,
+         "Oostkolk":2464
+      },
+      "Maasbracht":{
+         "Westkolk":2512,
+         "Middenkolk":2512,
+         "Oostkolk":3920
+      },
+      "Heel":{
+         "Westkolk":2387.0,
+         "Oostkolk":3321.0
+      }
+   },
+   "dH":{
+      "Born":11.35,
+      "Maasbracht":11.85,
+      "Heel":6.7
+   },
+   "max_pomp_inzet":{
+      "Born":12,
+      "Maasbracht":9,
+      "Heel":0
+   },
+    "pomp_kosten": {
+        "Born": 0.00423,
+        "Maasbracht": 0.00469,
+        "Heel": 9999999
+    },
+    "Hevelend": {
+        "Born": 0,
+        "Maasbracht": 1,
+        "Heel": 0
+    }
+}

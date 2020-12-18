@@ -1,0 +1,45 @@
+{
+   "Maasbracht":{
+"SLMSBR KBN 0 - Base, Area"                  : "REF",
+"SLMSBR KBN 0 - Base, Area 50 Rep"           : "Base, Area 50 Rep",
+"SLMSBR KBN 0 - Base, Area 200 Rep"          : "Base, Area 200 Rep",
+"SLMSBR KBN 0 - Base, Area beroep 10up"      : "Beroepsvaart +10%",
+"SLMSBR KBN 0 - Base, Area beroep 20up"      : "Beroepsvaart +20%",
+"SLMSBR KBN 0 - Base, Area recreatie 50down" : "Recreatievaart -50%",
+"SLMSBR KBN 0 - Base, Area recreatie 100down": "Recreatievaart -100%",
+"SLMSBR KBN 2 - OK BD"                       : "Oostkolk gestremd",
+"SLMSBR KBN 3 - WK BD"                       : "Westkolk gestremd",
+"SLMSBR KBN 4 - R 40 80 30"                  : "R 40 80 30",
+"SLMSBR KBN 5 - R 40 80 60"                  : "R 40 80 60",
+"SLMSBR KBN 6 - R 40 80 90"                  : "R 40 80 90",
+"SLMSBR KBN 7 - R 60 80 90"                  : "R 60 80 90",
+"SLMSBR KBN 8 - R 80 80 90"                  : "R 80 80 90",
+"SLMSBR KBN 9 - R 80 80 110"                 : "R 80 80 110"
+   },
+   "Born":{
+"SLB 0 - Base"                               : "REF",
+"SLB 0 - Base 10up beroep"                   : "Beroepsvaart +10%",
+"SLB 1 - R 40 80 30"                         : "R 40 80 30",
+"SLB 2 - R 40 80 60"                         : "R 40 80 60",
+"SLB 3 - R 40 80 90"                         : "R 40 80 90",
+"SLB 4 - R 60 80 90"                         : "R 60 80 90",
+"SLB 5 - R 80 80 90"                         : "R 80 80 90",
+"SLB 6 - R 80 80 110"                        : "R 80 80 110"
+   },
+   "Heel":{
+"SLH KBN 0 - Base"                           : "REF",
+"SLH KBN 0 - Base 10up beroep"               : "Beroepsvaart +10%",
+"SLH KBN 0 - Base 50Rep"                     : "Base 50Rep",
+"SLH KBN 1 - R 40 80 30"                     : "R 40 80 30",
+"SLH KBN 2 - R 40 80 60"                     : "R 40 80 60",
+"SLH KBN 3 - R 40 80 90"                     : "R 40 80 90",
+"SLH KBN 4 - R 60 80 90"                     : "R 60 80 90",
+"SLH KBN 5 - R 80 80 90"                     : "R 80 80 90",
+"SLH KBN 6 - R 80 80 110"                    : "R 80 80 110"
+   }
+}
+
+
+
+
+
