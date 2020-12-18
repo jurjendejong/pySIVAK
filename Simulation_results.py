@@ -46,7 +46,7 @@ for lock in ['Maasbracht', 'Born', 'Heel']:
         outputdir = Path('Simulation_results') / lock / scenario_name / 'zonder_postprocessing'
         outputdir.mkdir(exist_ok=True, parents=True)
 
-        plots.plot_and_save_all(S, outputdir=outputdir)
+        plots.plot_and_save_all(s, outputdir=outputdir)
         
         maximum_waiting_time = float(scenario_name.split(' ')[-1]) / 60 if scenario_name.startswith("R ") else 9999
         s.correction_waitingtimes_without_new_arrivals(maximum_waiting_time=maximum_waiting_time)
@@ -55,4 +55,4 @@ for lock in ['Maasbracht', 'Born', 'Heel']:
         
         outputdir = Path('Simulation_results') / lock / scenario_name
         
-        plots.plot_and_save_all(S, outputdir=outputdir)
+        plots.plot_and_save_all(s, outputdir=outputdir)
