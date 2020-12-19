@@ -18,15 +18,13 @@ logging.basicConfig(level=logging.INFO)
 class pySIVAK:
 
     def __init__(self, levelings_file: Path, transit_times_file: Path, ships_file: Path = None,
-                 summary_file: Path = None,
-                 replications: list = None):
+                 summary_file: Path = None):
         """
 
         :param ships_file:
         :param levelings_file:
         :param transit_times_file:
         :param summary_file:
-        :param replications: list of replications
         """
 
         self.name = levelings_file.stem.split('(')[1].split(')')[0]
@@ -40,10 +38,7 @@ class pySIVAK:
             self.transit_times = self.transit_times.join(self.ships, rsuffix='_shiplog')
         else:
             logging.info('Ships file not giving, some features might not work')
-
-        # Only select specific replications
-        if replications is not None:
-            self.ships.reindex(replications, axis=0, level=0)
+            self.ships = None
 
         if summary_file is not None:
             self.summary = pd.read_excel(summary_file, index_col='Chamber')
@@ -59,6 +54,21 @@ class pySIVAK:
         for c in ['Start Doors Closing', 'Start Leveling', 'Start Doors Opening', 'Start Sailing Out',
                   'End Sailing Out']:
             self.levelings[c] = pd.to_datetime(self.levelings[c], format='%d-%m-%Y %H:%M:%S')
+
+    def select_replications(self, replications):
+        """
+
+        :param replications: list of replications
+        :return:
+        """
+        self.levelings = self.levelings.reindex(replications, axis=0, level=0)
+        self.transit_times = self.transit_times.reindex(replications, axis=0, level=0)
+
+        if self.ships is not None:
+            self.ships = self.ships.reindex(replications, axis=0, level=0)
+
+        self.replications = len(replications)
+        self.summary_compute()
 
     def correction_leveling_without_utilization(self) -> None:
         """ Remove levelings without utilization """
