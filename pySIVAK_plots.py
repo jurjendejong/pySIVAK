@@ -14,7 +14,7 @@ import numpy as np
 
 
 def barplot_passagetime_per_shiptype(S):
-    plotdata = S.transit_times.groupby('Class')['Passage time (hours)'].count()
+    plotdata = S.transit_times.groupby('Class')['Passage time (hours)'].mean() * 60
 
     plotdata.plot.barh(figsize=(4, 6), zorder=3)
     plt.xlabel('Passeertijd (min)')
