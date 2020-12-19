@@ -13,7 +13,7 @@ import pandas as pd
 import numpy as np
 
 
-def passagetime_per_shiptype(S):
+def barplot_passagetime_per_shiptype(S):
     plotdata = S.transit_times.groupby('Class')['Passage time (hours)'].count()
 
     plotdata.plot.barh(figsize=(4, 6), zorder=3)
@@ -24,7 +24,7 @@ def passagetime_per_shiptype(S):
     return plotdata
 
 
-def passagetime_per_hour_per_day(S):
+def heatmap_passagetime_per_hour_per_day(S):
     # Difference in weekday
     plotdata = S.passage_time_per_hour_per_day()
     plt.figure(figsize=(10, 4))
@@ -36,7 +36,7 @@ def passagetime_per_hour_per_day(S):
     return plotdata
 
 
-def passagetime_per_hour_per_day_sum(S):
+def heatmap_passagetime_per_hour_per_day_sum(S):
     plotdata = S.passage_time_per_hour_per_day_per_ship_sum().fillna(0).sum(axis=1).unstack().fillna(0)
     plt.figure(figsize=(10, 4))
     sns.heatmap(plotdata.T, cbar=False, cbar_kws={'label': 'Passeer tijd (min)'}, cmap='Oranges', annot=True, fmt='.0f',
@@ -47,7 +47,7 @@ def passagetime_per_hour_per_day_sum(S):
     return plotdata
 
 
-def waitingtime_per_hour_per_day_sum(S):
+def heatmap_waitingtime_per_hour_per_day_sum(S):
     plotdata = S.passage_time_per_hour_per_day_per_ship_sum(waiting_time=True).fillna(0).sum(axis=1).unstack().fillna(0)
     plt.figure(figsize=(10, 4))
     sns.heatmap(plotdata.T, cbar=False, cbar_kws={'label': 'Passeer tijd (min)'}, cmap='Oranges', annot=True, fmt='.0f',
@@ -58,7 +58,7 @@ def waitingtime_per_hour_per_day_sum(S):
     return plotdata
 
 
-def waterloss_per_hour_per_day(S):
+def heatmap_waterloss_per_hour_per_day(S):
     # Difference in weekday
     plotdata = S.waterloss_per_hour_per_day()
     plt.figure(figsize=(10, 4))
@@ -145,35 +145,35 @@ def plot_and_save_all(S, outputdir):
     outputdir = Path(outputdir)
     outputdir.mkdir(exist_ok=True, parents=True)
 
-    plotdata = passagetime_per_shiptype(S)
+    plotdata = barplot_passagetime_per_shiptype(S)
 
     plt.savefig(outputdir / 'Passeertijd_scheepstype.png', bbox_inches='tight', dpi=150)
     plt.savefig(outputdir / 'Passeertijd_scheepstype.svg', bbox_inches='tight')
     plt.close()
     plotdata.to_csv(outputdir / 'Passeertijd_scheepstype.csv')
 
-    plotdata = passagetime_per_hour_per_day(S)
+    plotdata = heatmap_passagetime_per_hour_per_day(S)
 
     plt.savefig(outputdir / 'Passeertijd_dag_uur.png', bbox_inches='tight', dpi=150)
     plt.savefig(outputdir / 'Passeertijd_dag_uur.svg', bbox_inches='tight')
     plt.close()
     plotdata.to_csv(outputdir / 'Passeertijd_dag_uur.csv')
 
-    plotdata = passagetime_per_hour_per_day_sum(S)
+    plotdata = heatmap_passagetime_per_hour_per_day_sum(S)
 
     plt.savefig(outputdir / 'Passeertijd_dag_uur_som.png', bbox_inches='tight', dpi=150)
     plt.savefig(outputdir / 'Passeertijd_dag_uur_som.svg', bbox_inches='tight')
     plt.close()
     plotdata.to_csv(outputdir / 'Passeertijd_dag_uur_som.csv')
 
-    plotdata = waitingtime_per_hour_per_day_sum(S)
+    plotdata = heatmap_waitingtime_per_hour_per_day_sum(S)
 
     plt.savefig(outputdir / 'Wachttijd_dag_uur_som.png', bbox_inches='tight', dpi=150)
     plt.savefig(outputdir / 'Wachttijd_dag_uur_som.svg', bbox_inches='tight')
     plt.close()
     plotdata.to_csv(outputdir / 'Wachttijd_dag_uur_som.csv')
 
-    plotdata = waterloss_per_hour_per_day(S)
+    plotdata = heatmap_waterloss_per_hour_per_day(S)
 
     plt.savefig(outputdir / 'Schutdebiet.png', bbox_inches='tight', dpi=150)
     plt.savefig(outputdir / 'Schutdebiet.svg', bbox_inches='tight')
