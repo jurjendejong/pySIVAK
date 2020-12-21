@@ -95,12 +95,13 @@ class pySIVAK:
 
             # Get all vessels that have a current waiting time longer than max and
             # where it also take longer than max for a next vessel to arrive
-            ii_correct = (d_dir['Waiting time (hours)'] >= maximum_waiting_time) & (
+            ii_correct = (d_dir['Total waiting time (hours)'] >= maximum_waiting_time) & (
                     time_until_next_vessel >= maximum_waiting_time)
             n_correct.extend(ii_correct.index[ii_correct])
 
         # Set waiting time to 0 hours
         d.loc[n_correct, 'Waiting time (hours)'] = 0
+        d.loc[n_correct, 'Demurrage time (hours)'] = 0
 
         # Also recompute derived statistics
         d['Total waiting time (hours)'] = d['Waiting time (hours)'] + d['Demurrage time (hours)']
