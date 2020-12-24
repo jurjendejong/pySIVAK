@@ -120,7 +120,7 @@ def heatmap_utilization(S):
 
 
 def histogram_waitingtime(S):
-    plotdata = S.transit_times['Waiting time (hours)']
+    plotdata = S.transit_times['Total waiting time (hours)']
     plotdata = plotdata * 60
 
     t_criterium = 30
