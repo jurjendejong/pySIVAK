@@ -1,8 +1,6 @@
 {
-   "Maasbracht":{
+   "Maasbracht":       {
 "SLMSBR KBN 0 - Base, Area"                  : "REF",
-"SLMSBR KBN 0 - Base, Area 50 Rep"           : "Base, Area 50 Rep",
-"SLMSBR KBN 0 - Base, Area 200 Rep"          : "Base, Area 200 Rep",
 "SLMSBR KBN 0 - Base, Area beroep 10up"      : "Beroepsvaart +10%",
 "SLMSBR KBN 0 - Base, Area beroep 20up"      : "Beroepsvaart +20%",
 "SLMSBR KBN 0 - Base, Area recreatie 50down" : "Recreatievaart -50%",
@@ -14,22 +12,38 @@
 "SLMSBR KBN 6 - R 40 80 90"                  : "R 40 80 90",
 "SLMSBR KBN 7 - R 60 80 90"                  : "R 60 80 90",
 "SLMSBR KBN 8 - R 80 80 90"                  : "R 80 80 90",
-"SLMSBR KBN 9 - R 80 80 110"                 : "R 80 80 110"
+"SLMSBR KBN 9 - R 80 80 110"                 : "R 80 80 110",
+"SLMSBR KBN 0 - Base, Area H 100 100"        : "REF H 100 100",
+"SLMSBR KBN 4 - R 40 80 30 H 100 100"        : "R 40 80 30 H 100 100",
+"SLMSBR KBN 5 - R 40 80 60 H 100 100"        : "R 40 80 60 H 100 100",
+"SLMSBR KBN 4 - R 40 80 30, beroep 10up"     : "R 40 80 30 Beroepsvaart +10%",
+"SLMSBR KBN 4 - R 40 80 30, beroep 20up"     : "R 40 80 30 Beroepsvaart +20%",
+"SLMSBR KBN 4 - R 40 80 30, recreatie 50down": "R 40 80 30 Recreatievaart -50%",
+"SLMSBR KBN 4 - R 40 80 30, recreatie 100down":"R 40 80 30 Recreatievaart -100%"
    },
    "Born":{
 "SLB 0 - Base"                               : "REF",
 "SLB 0 - Base 10up beroep"                   : "Beroepsvaart +10%",
+"SLB 0 - Base 20up beroep"                   : "Beroepsvaart +20%",
+"SLB 0 - Base 50down recreatie"              : "Recreatievaart -50%",
+"SLB 0 - Base 100down recreatie"             : "Recreatievaart -100%",
 "SLB 1 - R 40 80 30"                         : "R 40 80 30",
 "SLB 2 - R 40 80 60"                         : "R 40 80 60",
 "SLB 3 - R 40 80 90"                         : "R 40 80 90",
 "SLB 4 - R 60 80 90"                         : "R 60 80 90",
 "SLB 5 - R 80 80 90"                         : "R 80 80 90",
-"SLB 6 - R 80 80 110"                        : "R 80 80 110"
+"SLB 6 - R 80 80 110"                        : "R 80 80 110",
+"SLB 0 - Base, noWK"                         : "REF (zonder oude kolk)",
+"SLB 3 - R 40 80 90, noWK"                   : "R 40 80 90 (zonder oude kolk)",
+"SLB 4 - R 60 80 90, noWK"                   : "R 60 80 90 (zonder oude kolk)",
+"SLB 5 - R 80 80 90, noWK"                   : "R 80 80 90 (zonder oude kolk)"
    },
    "Heel":{
 "SLH KBN 0 - Base"                           : "REF",
 "SLH KBN 0 - Base 10up beroep"               : "Beroepsvaart +10%",
-"SLH KBN 0 - Base 50Rep"                     : "Base 50Rep",
+"SLH KBN 0 - Base 20up beroep"               : "Beroepsvaart +20%",
+"SLH KBN 0 - Base 50down recreatie"          : "Recreatievaart -50%",
+"SLH KBN 0 - Base 100down recreatie"         : "Recreatievaart -100%",
 "SLH KBN 1 - R 40 80 30"                     : "R 40 80 30",
 "SLH KBN 2 - R 40 80 60"                     : "R 40 80 60",
 "SLH KBN 3 - R 40 80 90"                     : "R 40 80 90",

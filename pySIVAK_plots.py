@@ -14,7 +14,7 @@ import numpy as np
 
 
 def barplot_passagetime_per_shiptype(S):
-    plotdata = S.transit_times.groupby('Class')['Passage time (hours)'].mean() * 60
+    plotdata = S.transit_times.groupby('Class')['Passage time [hours]'].mean() * 60
 
     plotdata.plot.barh(figsize=(4, 6), zorder=3)
     plt.xlabel('Passeertijd (min)')
@@ -87,16 +87,17 @@ def barplot_ships_per_leveling(S):
 
 
 def barplot_passagetime(S):
-    plotdata = (S.transit_times.groupby('Chamber')[['Waiting time (hours)',
-                                                    'Demurrage time (hours)',
-                                                    'Leveling time (hours)', ]].mean() * 60)
+    plotdata = (S.transit_times.groupby('Chamber')[['Waiting time [hours]',
+                                                    'Demurrage time [hours]',
+                                                    'Leveling time [hours]', ]].mean() * 60)
 
     plotdata.rename(columns={
-        'Waiting time (hours)': 'Wachttijd',
-        'Demurrage time (hours)': 'Overligtijd',
-        'Leveling time (hours)': 'Schuttijd'
+        'Waiting time [hours]': 'Wachttijd',
+        'Demurrage time [hours]': 'Overligtijd',
+        'Leveling time [hours]': 'Schuttijd'
     }, inplace=True)
 
+    plotdata = plotdata[['Schuttijd', 'Wachttijd', 'Overligtijd']] # Set order
     plotdata.plot.bar(stacked=True, figsize=(3, 4), width=0.8, zorder=3)
 
     plt.gca().legend(*map(reversed, plt.gca().get_legend_handles_labels()), loc='center left',
@@ -120,7 +121,7 @@ def heatmap_utilization(S):
 
 
 def histogram_waitingtime(S):
-    plotdata = S.transit_times['Total waiting time (hours)']
+    plotdata = S.transit_times['Total waiting time [hours]']
     plotdata = plotdata * 60
 
     t_criterium = 30
